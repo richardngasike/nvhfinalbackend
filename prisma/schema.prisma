@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  name      String
+  phone     String?
+  role      Role       @default(TENANT)
+  isPremium Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  listings  Listing[]
+  favorites Favorite[]
+
+  @@index([email])
+}
+
+enum Role {
+  TENANT
+  LANDLORD
+  ADMIN
+}
+
+model Listing {
+  id            Int       @id @default(autoincrement())
+  title         String
+  price         Int
+  location      String
+  houseType     HouseType
+  description   String    @db.Text
+  amenities     String[]
+  landlordName  String
+  landlordPhone String
+  isActive      Boolean   @default(true)
+  views         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images        Image[]
+  favorites     Favorite[]
+
+  @@index([location])
+  @@index([houseType])
+  @@index([price])
+  @@index([userId])
+  @@index([isActive])
+}
+
+enum HouseType {
+  SINGLE_ROOM
+  BEDSITTER
+  ONE_BEDROOM
+  TWO_BEDROOM
+  THREE_BEDROOM
+  FOUR_BEDROOM_PLUS
+}
+
+model Image {
+  id        Int     @id @default(autoincrement())
+  path      String
+  filename  String
+  listingId Int
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  listingId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+}
